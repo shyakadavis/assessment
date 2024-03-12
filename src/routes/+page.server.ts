@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 import { render } from 'svelte-email';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { ServiceFormSchema, type TServiceForm } from './schema.js';
+import { ServiceFormSchema } from './schema.js';
 import ServiceForm from './service-form.svelte';
 
 const transporter = nodemailer.createTransport({
@@ -21,30 +21,27 @@ export const load = async () => {
 export const actions = {
 	default: async (event) => {
 		const form = await superValidate(event, zod(ServiceFormSchema));
+
 		if (!form.valid) {
 			return fail(400, { form });
 		}
 
 		try {
-			const to_email = form.data.email;
-			// create a new data object made of only the data which is not undefined or empty
-			const data = Object.fromEntries(
-				Object.entries(form.data).filter(([, value]) => value !== undefined || value !== '')
-			) as TServiceForm;
-
 			const email_html = render({
 				template: ServiceForm,
-				props: { payload: data }
+				props: { payload: form.data }
 			});
 
 			const options = {
-				from: 'you@example.com',
-				to: to_email,
+				from: 'Irembo MDS',
+				to: form.data.email,
 				subject: 'Service Form',
 				html: email_html
 			};
 
 			await transporter.sendMail(options);
+
+			return { form };
 		} catch (error) {
 			console.error(error);
 			return { form };
